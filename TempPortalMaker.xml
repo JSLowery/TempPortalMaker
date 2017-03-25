@@ -83,6 +83,9 @@
   </alias>
 </aliases>
 
+
+
+
 <!--  Script  -->
 
 
@@ -90,6 +93,7 @@
 <![CDATA[
 require "tprint"
 require "pluginhelper"
+
 function portal_handle(name, line, wildcards)
   res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room") --- We just want the gmcp.char section.
   luastmt = "gmcpdata = " .. gmcparg --- Convert the serialized string back into a lua table.
@@ -115,17 +119,25 @@ function portaldel()
   Execute('mapper delete portal c homecom')
 end
 function portaldelpet()
-  Execute('mapper delete portal c door')
+  Execute('mapper delete portal c door '.. GetVariable('pet'))
 end
 function portal_handle_pet(name, line, wildcards)
+  local petname = GetVariable('pet')
+  if petname ==nil or petname == '' then
+    Note('pet was nil')
+    petname = wildcards[1]
+    SetVariable('pet', petname)
+  else
+    Note(petname)
+  end
   res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room") --- We just want the gmcp.char section.
   luastmt = "gmcpdata = " .. gmcparg --- Convert the serialized string back into a lua table.
   assert (loadstring (luastmt or "")) ()
-  if (GetTimerInfo("portaldel", 1)~= nil) then
-    portaldelpet()
-  end
   
-  Send('order '..wildcards[1]..' sit')
+  portaldelpet()
+  
+  Send('heel')
+  Send('order '..petname..' sit')
   Execute ('mapper fullportal {c door '..wildcards[1]..'} {'..gmcpdata.info.num..'} 0')
 end
 function do_Execute_no_echo(command)
@@ -143,15 +155,16 @@ function clearPortalHome()
   Execute('mapper delete portal c homecom')
 end
 function clearPortalPet()
-  Execute('mapper delete portal c door')
+  Execute('mapper delete portal c door '.. GetVariable('pet'))
+  SetVariable('pet', '')
 end
 function help()
   print ('Commands are:')
   print(' -- homePortal, this can take a room number or leave it out, will autocast beacon of homecomming.')
   print(' -- petPortal, this takes the mob name as "petPortal slobcat"')
   print(' --clearPortals')
-  print(' --clearPortalPet')
-  print(' --clearPortalHome')
+  print(' --clearPetPortal')
+  print(' --clearHomePortal')
   
 end
 ]]>
