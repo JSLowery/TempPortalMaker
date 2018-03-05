@@ -36,6 +36,7 @@
    sequence="100"
   >
   </alias>
+
   <alias
    match="^TPM help$"
    enabled="y"
@@ -82,8 +83,20 @@
   >
   </alias>
 </aliases>
-
-
+<triggers>
+  <trigger
+   enabled="n"
+   keep_evaluating="y"
+   match="^Your beacon of homecoming is in \: (.+) \((?P<hour>\d+):(?P<minute>\d+):(?P<second>\d+)\)$"
+   script="beacon_time"
+   regexp="y"
+   name='beacon_time_trig'
+   send_to="12"
+   sequence="1"
+   omit_from_output="n"
+  >
+  </trigger>
+</triggers>
 
 
 <!--  Script  -->
@@ -93,6 +106,14 @@
 <![CDATA[
 require "tprint"
 require "pluginhelper"
+
+function beacon_time(name, line, wildcards)
+  local hour = tonumber(wildcards.hour)
+  local minute = tonumber(wildcards.minute)
+  local second = tonumber(wildcards.second)
+  AddTimer ( 'portaldel' , hour , minute , second , 'echo deleting temp portal' , 1029 , 'portaldel' )
+  EnableTrigger('beacon_time_trig', 0)
+end
 
 function portal_handle(name, line, wildcards)
   res, gmcparg = CallPlugin("3e7dedbe37e44942dd46d264","gmcpval","room") --- We just want the gmcp.char section.
@@ -113,7 +134,10 @@ function portal_handle(name, line, wildcards)
   else
     Execute ('mapper fullportal {c homecom} {'..gmcpdata.info.num..'} 0')
   end
-  AddTimer ( 'portaldel' , 2 , 15 , 0 , 'echo deleting temp portal' , 1029 , 'portaldel' )
+  -- this is wher eyou will need to add a check for time of beacon life
+  EnableTrigger('beacon_time_trig', 1)
+  Execute('beacon')
+  --AddTimer ( 'portaldel' , 2 , 15 , 0 , 'echo deleting temp portal' , 1029 , 'portaldel' )
 end
 function portaldel()
   Execute('mapper delete portal c homecom')
